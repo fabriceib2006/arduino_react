@@ -32,7 +32,7 @@ function ConnectionPanel({ isConnected, setIsConnected }) {
         onClick={handleConnect}
         disabled={isConnected}
       >
-        Connect to Submarine
+        Connect to IAE 1
       </button>
       <button
         onClick={handleDisconnect}

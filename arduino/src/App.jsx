@@ -18,7 +18,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Submarine Control Interface</h1>
+      <h1 className='h1'>Indatwa Aqua Explore 1 Control Interface</h1>
       <VideoFeed isConnected={isConnected} />
       <ConnectionPanel 
         isConnected={isConnected}
