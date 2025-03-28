@@ -40,7 +40,7 @@ function ConnectionPanel({ isConnected, setIsConnected }) {
       >
         Disconnect
       </button>
-      <span>Status: {isConnected ? 'Connected' : 'Disconnected'}</span>
+      <span className='status'>Status: {isConnected ? 'Connected' : 'Disconnected'}</span>
     </div>
   );
 }

@@ -79,7 +79,7 @@ function ManualControls({ isConnected, updateStatus }) {
         >
           Light Off
         </button>
-        <span>Lights: {lights ? 'On' : 'Off'}</span>
+        <span className='manual'>Lights: {lights ? 'On' : 'Off'}</span>
       </div>
     </div>
   );

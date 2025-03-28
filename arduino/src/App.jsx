@@ -4,6 +4,7 @@ import SubmarineControls from './components/SubmarineControls';
 import ManualControls from './components/ManualControls';
 import StatusDashboard from './components/StatusDashboard';
 import ConnectionPanel from './components/ConnectionPanel';
+import VideoFeed from './components/VideoFeed'; // New import
 import './App.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
   return (
     <div className="app-container">
       <h1>Submarine Control Interface</h1>
+      <VideoFeed isConnected={isConnected} />
       <ConnectionPanel 
         isConnected={isConnected}
         setIsConnected={setIsConnected}
