@@ -6,7 +6,7 @@ function VideoFeed({ isConnected }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideos, setRecordedVideos] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const videoStreamUrl = 'http://[your-esp32-ip]/stream';
+  const videoStreamUrl = 'http://[your-esp32-ip]/stream'; // Replace with your ESP32-CAM stream URL
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunks = useRef([]);
@@ -32,6 +32,7 @@ function VideoFeed({ isConnected }) {
     setIsRecording(true);
     recordedChunks.current = [];
 
+    // Simulate recording (MJPEG recording requires server-side support)
     const simulatedRecording = setTimeout(() => {
       stopRecording();
     }, 10000);
@@ -70,13 +71,6 @@ function VideoFeed({ isConnected }) {
     localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
   };
 
-  // Prevent arrow keys from scrolling the history list
-  const handleHistoryKeyDown = (event) => {
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-      event.preventDefault(); // Prevent scrolling in the history list
-    }
-  };
-
   return (
     <div className="video-feed">
       <h2>Camera Feed</h2>
@@ -100,21 +94,18 @@ function VideoFeed({ isConnected }) {
 
       {isVideoEnabled && isConnected && !showHistory ? (
         <div className="video-container">
-          <iframe
+          <img
             src={videoStreamUrl}
-            title="IAE 1 Camera Feed"
+            alt="Submarine Camera Feed"
             className="video-stream"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/640x480?text=Video+Feed+Unavailable';
+            }}
           />
         </div>
       ) : showHistory ? (
-        <div
-          className="video-history"
-          onKeyDown={handleHistoryKeyDown}
-          tabIndex={0} // Make the div focusable to capture key events
-        >
+        <div className="video-history">
           <h3>Recording History</h3>
           {recordedVideos.length > 0 ? (
             <ul>

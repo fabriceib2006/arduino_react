@@ -3,7 +3,7 @@ import React from 'react';
 function StatusDashboard({ status }) {
   return (
     <div className="status-dashboard">
-      <h2>Submarine Status</h2>
+      <h2>IAE 1 Status</h2>
       <div className="status-item">
         <span>Depth:</span> <span>{status.depth} m</span>
       </div>
