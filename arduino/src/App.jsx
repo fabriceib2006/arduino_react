@@ -5,6 +5,7 @@ import ManualControls from './components/ManualControls';
 import StatusDashboard from './components/StatusDashboard';
 import ConnectionPanel from './components/ConnectionPanel';
 import VideoFeed from './components/VideoFeed'; // New import
+import SettingsPanel from './components/settingsService'
 import './App.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         isConnected={isConnected}
         setIsConnected={setIsConnected}
       />
+      <SettingsPanel /> {/* New settings panel component */}
       <div className="main-layout">
         <SubmarineControls 
           isConnected={isConnected}
