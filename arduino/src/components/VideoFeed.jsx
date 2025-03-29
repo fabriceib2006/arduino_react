@@ -1,4 +1,3 @@
-// components/VideoFeed.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
 function VideoFeed({ isConnected }) {
@@ -6,67 +5,116 @@ function VideoFeed({ isConnected }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideos, setRecordedVideos] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const videoStreamUrl = 'http://[your-esp32-ip]/stream'; // Replace with your ESP32-CAM stream URL
+  const [error, setError] = useState(null);
+  const videoStreamUrl = 'http://192.168.1.100/stream';
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    const savedVideos = JSON.parse(localStorage.getItem('recordedVideos')) || [];
-    setRecordedVideos(savedVideos);
+    fetchRecordings();
   }, []);
 
   useEffect(() => {
     if (!isConnected) {
       setIsVideoEnabled(false);
       setIsRecording(false);
+      if (videoRef.current) {
+        videoRef.current.src = ''; // Clear the video source
+      }
     }
   }, [isConnected]);
+
+  const fetchRecordings = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/recordings');
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Failed to fetch recordings:', response.status, text);
+        setError(`Failed to fetch recordings: ${response.status} - ${text}`);
+        return;
+      }
+      const data = await response.json();
+      setRecordedVideos(data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch recordings:', err);
+      setError(err.message);
+    }
+  };
 
   const startRecording = async () => {
     if (!isVideoEnabled || !isConnected) return;
 
     setIsRecording(true);
+    setError(null);
     try {
       const response = await fetch('http://localhost:3000/start-recording', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
       });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Failed to start recording:', response.status, text);
+        setError(`Failed to start recording: ${response.status} - ${text}`);
+        setIsRecording(false);
+        return;
+      }
       const data = await response.json();
       console.log('Recording started:', data);
-    } catch (error) {
-      console.error('Failed to start recording:', error);
+    } catch (err) {
+      console.error('Failed to start recording:', err);
+      setError(err.message);
       setIsRecording(false);
     }
   };
 
   const stopRecording = async () => {
+    if (!isRecording) {
+      setError('No recording in progress');
+      return;
+    }
     setIsRecording(false);
+    setError(null);
     try {
-      const response = await fetch('http://localhost:3000/stop-recording');
-      const data = await response.json();
-      const timestamp = new Date().toISOString();
-      const newRecording = {
-        id: Date.now(),
-        timestamp,
-        url: data.url,
-        name: `Recording_${timestamp}.mp4`,
-      };
-      const updatedVideos = [...recordedVideos, newRecording];
-      setRecordedVideos(updatedVideos);
-      localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
+      const response = await fetch('http://localhost:3000/stop-recording', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Failed to stop recording:', response.status, text);
+        setError(`Failed to stop recording: ${response.status} - ${text}`);
+        return;
+      }
+      const newRecording = await response.json();
       console.log('Recording stopped and saved:', newRecording);
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
+      await fetchRecordings();
+    } catch (err) {
+      console.error('Failed to stop recording:', err);
+      setError(err.message);
+    }
+  };
+
+  const deleteRecording = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3000/recordings/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Failed to delete recording:', response.status, text);
+        setError(`Failed to delete recording: ${response.status} - ${text}`);
+        return;
+      }
+      await fetchRecordings();
+    } catch (err) {
+      console.error('Failed to delete recording:', err);
+      setError(err.message);
     }
   };
 
   const toggleHistory = () => {
-    setShowHistory(prev => !prev);
-  };
-
-  const deleteRecording = (id) => {
-    const updatedVideos = recordedVideos.filter(video => video.id !== id);
-    setRecordedVideos(updatedVideos);
-    localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
+    setShowHistory((prev) => !prev);
   };
 
   const handleHistoryKeyDown = (event) => {
@@ -78,11 +126,9 @@ function VideoFeed({ isConnected }) {
   return (
     <div className="video-feed">
       <h2>Camera Feed</h2>
+      {error && <div className="error-message">{error}</div>}
       <div className="video-controls">
-        <button
-          onClick={() => setIsVideoEnabled(prev => !prev)}
-          disabled={!isConnected}
-        >
+        <button onClick={() => setIsVideoEnabled((prev) => !prev)} disabled={!isConnected}>
           {isVideoEnabled ? 'Disable Video' : 'Enable Video'}
         </button>
         <button
@@ -99,6 +145,7 @@ function VideoFeed({ isConnected }) {
       {isVideoEnabled && isConnected && !showHistory ? (
         <div className="video-container">
           <img
+            ref={videoRef}
             src={videoStreamUrl}
             alt="Submarine Camera Feed"
             className="video-stream"
@@ -113,11 +160,11 @@ function VideoFeed({ isConnected }) {
           <h3>Recording History</h3>
           {recordedVideos.length > 0 ? (
             <ul>
-              {recordedVideos.map(video => (
+              {recordedVideos.map((video) => (
                 <li key={video.id} className="history-item">
                   <span>{video.name} ({new Date(video.timestamp).toLocaleString()})</span>
                   <div>
-                    <a href={video.url} target="_blank" rel="noopener noreferrer">
+                    <a href={`http://localhost:3000${video.url}`} target="_blank" rel="noopener noreferrer">
                       <button>View</button>
                     </a>
                     <button onClick={() => deleteRecording(video.id)}>Delete</button>

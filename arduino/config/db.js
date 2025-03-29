@@ -1,6 +1,5 @@
-//db.js
-// This file is responsible for creating a connection to the database
-import mysql from 'mysql2';
+import mysql from 'mysql2/promise'; // Add missing import
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -9,5 +8,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+}).on('error', (err) => {
+  console.error('Database error:', err);
 });
-export default pool.promise();
+
+export default pool; // Ensure the pool is exported

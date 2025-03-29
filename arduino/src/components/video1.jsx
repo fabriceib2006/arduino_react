@@ -6,7 +6,7 @@ function VideoFeed({ isConnected }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideos, setRecordedVideos] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const videoStreamUrl = 'http://[your-esp32-ip]/stream'; // Replace with your ESP32-CAM stream URL
+  const videoStreamUrl = 'http://192.168.1.100/stream'; // Replace placeholder with actual IP
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunks = useRef([]);

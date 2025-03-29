@@ -1,8 +1,8 @@
 // services/deviceServices.js
-const API_BASE_URL = 'http://localhost:5000/api/devices';
+const API_URL = 'http://localhost:3000/api/devices'; // Update to match the backend server's URL
 
 const fetchDevices = async () => {
-  const response = await fetch(API_BASE_URL);
+  const response = await fetch(API_URL);
   if (!response.ok) {
     throw new Error('Failed to fetch devices');
   }
@@ -10,3 +10,40 @@ const fetchDevices = async () => {
 };
 
 export default fetchDevices;
+
+// services/settingsServices.js
+
+// Fetch all settings
+export const fetchSettings = async () => {
+  const response = await fetch('http://localhost:5000/api/settings');
+  if (!response.ok) {
+    throw new Error('Failed to fetch settings');
+  }
+  return response.json();
+};
+
+// Update a setting
+export const updateSetting = async (id, key, value) => {
+  const response = await fetch(`http://localhost:5000/api/settings/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ setting_key: key, setting_value: value }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update setting');
+  }
+  return response.json();
+};
+
+// Delete a setting
+export const deleteSetting = async (id) => {
+  const response = await fetch(`http://localhost:5000/api/settings/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete setting');
+  }
+  return response.json();
+};
