@@ -1,46 +1,83 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-function ConnectionPanel({ isConnected, setIsConnected }) {
-  const handleConnect = () => {
-    // Placeholder for actual Arduino serial connection logic
-    // This would typically involve Web Serial API or a backend service
-    console.log('Attempting to connect to Arduino Uno...');
+function ConnectionPanel({ isConnected, setIsConnected, devices, setCurrentDevice }) {
+  const [selectedDevice, setSelectedDevice] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+
+  const handleConnect = async () => {
+    if (!selectedDevice) {
+      alert('Please select a device first');
+      return;
+    }
+
+    setConnectionStatus('connecting');
     try {
-      // Simulated connection (replace with real implementation)
+      // Simulate connection delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       setIsConnected(true);
-      console.log('Connected successfully');
+      setCurrentDevice(selectedDevice);
+      setConnectionStatus('connected');
+      console.log(`Connected to ${selectedDevice} successfully`);
     } catch (error) {
+      setConnectionStatus('error');
       console.error('Connection failed:', error);
     }
   };
 
   const handleDisconnect = () => {
-    // Placeholder for disconnection logic
-    console.log('Disconnecting from Arduino Uno...');
+    setConnectionStatus('disconnecting');
     try {
-      // Simulated disconnection
-      setIsConnected(false);
-      console.log('Disconnected successfully');
+      // Simulate disconnection delay
+      setTimeout(() => {
+        setIsConnected(false);
+        setCurrentDevice(null);
+        setConnectionStatus('disconnected');
+        console.log('Disconnected successfully');
+      }, 500);
     } catch (error) {
+      setConnectionStatus('error');
       console.error('Disconnection failed:', error);
     }
   };
 
   return (
     <div className="connection-panel">
-      <button
-        onClick={handleConnect}
-        disabled={isConnected}
-      >
-        Connect to IAE 1
-      </button>
-      <button
-        onClick={handleDisconnect}
-        disabled={!isConnected}
-      >
-        Disconnect
-      </button>
-      <span className='status'>Status: {isConnected ? 'Connected' : 'Disconnected'}</span>
+      <h2>Device Connection</h2>
+      
+      <div className="device-selection">
+        <select 
+          value={selectedDevice} 
+          onChange={(e) => setSelectedDevice(e.target.value)}
+          disabled={isConnected}
+        >
+          <option value="">Select a device</option>
+          {devices.map(device => (
+            <option key={device.id} value={device.id}>
+              {device.name} ({device.serial_number})
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="connection-buttons">
+        <button
+          onClick={handleConnect}
+          disabled={isConnected || !selectedDevice}
+        >
+          {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect'}
+        </button>
+        <button
+          onClick={handleDisconnect}
+          disabled={!isConnected}
+        >
+          {connectionStatus === 'disconnecting' ? 'Disconnecting...' : 'Disconnect'}
+        </button>
+      </div>
+      
+      <div className={`connection-status ${connectionStatus}`}>
+        Status: {connectionStatus.charAt(0).toUpperCase() + connectionStatus.slice(1)}
+      </div>
     </div>
   );
 }

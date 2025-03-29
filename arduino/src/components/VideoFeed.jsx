@@ -6,10 +6,7 @@ function VideoFeed({ isConnected }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideos, setRecordedVideos] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const videoStreamUrl = 'http://[your-esp32-ip]/stream';
-  const videoRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordedChunks = useRef([]);
+  const videoStreamUrl = 'http://[your-esp32-ip]/stream'; // Replace with your ESP32-CAM stream URL
 
   useEffect(() => {
     const savedVideos = JSON.parse(localStorage.getItem('recordedVideos')) || [];
@@ -20,44 +17,46 @@ function VideoFeed({ isConnected }) {
     if (!isConnected) {
       setIsVideoEnabled(false);
       setIsRecording(false);
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
     }
   }, [isConnected]);
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (!isVideoEnabled || !isConnected) return;
 
     setIsRecording(true);
-    recordedChunks.current = [];
-
-    const simulatedRecording = setTimeout(() => {
-      stopRecording();
-    }, 10000);
-
-    console.log('Recording started (simulated)...');
+    try {
+      const response = await fetch('http://localhost:3000/start-recording', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
+      });
+      const data = await response.json();
+      console.log('Recording started:', data);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      setIsRecording(false);
+    }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     setIsRecording(false);
-
-    const timestamp = new Date().toISOString();
-    const videoBlob = new Blob(recordedChunks.current, { type: 'video/mp4' });
-    const videoUrl = URL.createObjectURL(videoBlob);
-
-    const newRecording = {
-      id: Date.now(),
-      timestamp,
-      url: videoUrl || 'https://via.placeholder.com/640x480?text=Recorded+Video',
-      name: `Recording_${timestamp}.mp4`
-    };
-
-    const updatedVideos = [...recordedVideos, newRecording];
-    setRecordedVideos(updatedVideos);
-    localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
-
-    console.log('Recording stopped and saved:', newRecording);
+    try {
+      const response = await fetch('http://localhost:3000/stop-recording');
+      const data = await response.json();
+      const timestamp = new Date().toISOString();
+      const newRecording = {
+        id: Date.now(),
+        timestamp,
+        url: data.url,
+        name: `Recording_${timestamp}.mp4`,
+      };
+      const updatedVideos = [...recordedVideos, newRecording];
+      setRecordedVideos(updatedVideos);
+      localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
+      console.log('Recording stopped and saved:', newRecording);
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
   };
 
   const toggleHistory = () => {
@@ -70,10 +69,9 @@ function VideoFeed({ isConnected }) {
     localStorage.setItem('recordedVideos', JSON.stringify(updatedVideos));
   };
 
-  // Prevent arrow keys from scrolling the history list
   const handleHistoryKeyDown = (event) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-      event.preventDefault(); // Prevent scrolling in the history list
+      event.preventDefault();
     }
   };
 
@@ -100,21 +98,18 @@ function VideoFeed({ isConnected }) {
 
       {isVideoEnabled && isConnected && !showHistory ? (
         <div className="video-container">
-          <iframe
+          <img
             src={videoStreamUrl}
-            title="IAE 1 Camera Feed"
+            alt="Submarine Camera Feed"
             className="video-stream"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/640x480?text=Video+Feed+Unavailable';
+            }}
           />
         </div>
       ) : showHistory ? (
-        <div
-          className="video-history"
-          onKeyDown={handleHistoryKeyDown}
-          tabIndex={0} // Make the div focusable to capture key events
-        >
+        <div className="video-history" onKeyDown={handleHistoryKeyDown} tabIndex={0}>
           <h3>Recording History</h3>
           {recordedVideos.length > 0 ? (
             <ul>
