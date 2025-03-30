@@ -25,12 +25,9 @@ function VideoFeed({ isConnected }) {
 
   const fetchRecordings = async () => {
     try {
-      const response = await fetch('http://localhost:3000/recordings');
+      const response = await fetch('http://localhost:5000/api/recordings');
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Failed to fetch recordings:', response.status, text);
-        setError(`Failed to fetch recordings: ${response.status} - ${text}`);
-        return;
+        throw new Error('Failed to fetch recordings');
       }
       const data = await response.json();
       setRecordedVideos(data);
@@ -47,20 +44,15 @@ function VideoFeed({ isConnected }) {
     setIsRecording(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/start-recording', {
+      const response = await fetch('http://localhost:5000/api/recordings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
       });
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Failed to start recording:', response.status, text);
-        setError(`Failed to start recording: ${response.status} - ${text}`);
-        setIsRecording(false);
-        return;
+        throw new Error('Failed to start recording');
       }
-      const data = await response.json();
-      console.log('Recording started:', data);
+      await fetchRecordings();
     } catch (err) {
       console.error('Failed to start recording:', err);
       setError(err.message);
@@ -97,14 +89,11 @@ function VideoFeed({ isConnected }) {
 
   const deleteRecording = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/recordings/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/recordings/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Failed to delete recording:', response.status, text);
-        setError(`Failed to delete recording: ${response.status} - ${text}`);
-        return;
+        throw new Error('Failed to delete recording');
       }
       await fetchRecordings();
     } catch (err) {

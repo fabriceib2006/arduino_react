@@ -6,6 +6,7 @@ import cors from 'cors';
 import multer from 'multer';
 import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuidv4 } from 'uuid';
+import db from '../config/db.js'; // Import database connection
 
 const app = express();
 const PORT = 3000;
@@ -164,6 +165,40 @@ app.delete('/recordings/:id', (req, res) => {
   } catch (error) {
     console.error('Error deleting recording:', error);
     res.status(500).json({ error: 'Failed to delete recording' });
+  }
+});
+
+// Save recording to database
+app.post('/api/recordings', async (req, res) => {
+  const { streamUrl, duration } = req.body;
+  try {
+    const recordingId = uuidv4();
+    const name = `Recording ${recordingId}`;
+    const timestamp = new Date();
+
+    // Simulate saving recording
+    await db.query('INSERT INTO recordings (id, name, url, timestamp) VALUES (?, ?, ?, ?)', [
+      recordingId,
+      name,
+      streamUrl,
+      timestamp,
+    ]);
+
+    res.json({ message: 'Recording saved', id: recordingId });
+  } catch (error) {
+    console.error('Error saving recording:', error);
+    res.status(500).json({ error: 'Failed to save recording' });
+  }
+});
+
+// Fetch recordings from database
+app.get('/api/recordings', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM recordings');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching recordings:', error);
+    res.status(500).json({ error: 'Failed to fetch recordings' });
   }
 });
 
