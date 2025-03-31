@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import ConnectionPanel from './components/ConnectionPanel';
-import SettingsPanel from './components/SettingsPanel'; // Corrected import path
 import StatusDashboard from './components/StatusDashboard';
 import ManualControls from './components/ManualControls';
 import SubmarineControls from './components/SubmarineControls';
@@ -37,7 +36,6 @@ function App() {
               updateStatus={setStatus} 
             />
           </div>
-          <SettingsPanel />
         </>
       )}
     </div>
