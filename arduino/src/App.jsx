@@ -20,10 +20,14 @@ function App() {
     const fetchPorts = async () => {
       try {
         const response = await fetch(`${process.env.API_BASE_URL}/api/ports`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ports: ${response.statusText}`);
+        }
         const ports = await response.json();
         console.log('Available ports:', ports);
       } catch (err) {
-        console.error('Error fetching ports:', err);
+        console.error('Error fetching ports:', err.message);
+        alert('Failed to connect to the backend server. Please ensure it is running.');
       }
     };
     fetchPorts();

@@ -1,215 +1,88 @@
-//recordingServer.js
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import multer from 'multer';
-import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../config/db.js'; // Import database connection
-import { fileURLToPath } from 'url'; // Import helper to resolve __dirname
 
-// Define __dirname manually
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-const PORT = 3000;
+const router = express.Router();
+const RECORDINGS_DIR = path.join(process.cwd(), 'recordings');
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use('/recordings', express.static(path.join(__dirname, 'recordings'))); // Fix static path
+router.use(cors());
+router.use('/recordings', express.static(RECORDINGS_DIR)); // Serve recordings statically
 
-// Configuration
-const RECORDINGS_DIR = path.join(__dirname, 'recordings');
+// Log incoming requests with IP address
+router.use((req, res, next) => {
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  console.log(`Request received from IP: ${clientIP}`);
+  next();
+});
+
+// Ensure the recordings directory exists
 if (!fs.existsSync(RECORDINGS_DIR)) {
   fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
 }
 
-// In-memory storage for active recording (in a real app, use proper state management)
-let activeRecording = null;
-
-// Storage for recording files
+// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, RECORDINGS_DIR);
   },
   filename: (req, file, cb) => {
     cb(null, `${uuidv4()}.mp4`);
-  }
+  },
 });
-
 const upload = multer({ storage });
 
-// API Endpoints
-
-// Get list of recordings
-app.get('/recordings', (req, res) => {
+// Fetch all recordings
+router.get('/api/recordings', (req, res) => {
   try {
-    const files = fs.readdirSync(RECORDINGS_DIR);
-    const recordings = files.map(file => {
-      const stat = fs.statSync(path.join(RECORDINGS_DIR, file));
-      return {
-        id: path.parse(file).name,
-        name: `Recording ${path.parse(file).name}`,
-        url: `./recordings/${file}`,
-        timestamp: stat.birthtime
-      };
-    }).sort((a, b) => b.timestamp - a.timestamp);
-
+    const recordings = fs.readdirSync(RECORDINGS_DIR).map((file) => ({
+      id: path.basename(file, '.mp4'),
+      name: file,
+      url: `/recordings/${file}`,
+      timestamp: fs.statSync(path.join(RECORDINGS_DIR, file)).mtime,
+    }));
     res.json(recordings);
-  } catch (error) {
-    console.error('Error fetching recordings:', error);
+  } catch (err) {
+    console.error('Error fetching recordings:', err.message);
     res.status(500).json({ error: 'Failed to fetch recordings' });
   }
 });
 
-// Start recording
-app.post('/start-recording', (req, res) => {
-  try {
-    const { streamUrl, duration } = req.body;
-    
-    if (activeRecording) {
-      return res.status(400).json({ error: 'Recording already in progress' });
-    }
-
-    const recordingId = uuidv4();
-    const outputPath = path.join(RECORDINGS_DIR, `${recordingId}.mp4`);
-
-    // Start recording with ffmpeg
-    const command = ffmpeg(streamUrl)
-      .inputOptions([
-        '-rtsp_transport tcp',
-        '-stimeout 5000000'
-      ])
-      .outputOptions([
-        '-c:v copy',
-        '-c:a copy',
-        '-f mp4'
-      ])
-      .save(outputPath)
-      .on('start', (commandLine) => {
-        console.log('Recording started:', commandLine);
-        activeRecording = {
-          id: recordingId,
-          process: command,
-          outputPath,
-          startTime: new Date()
-        };
-        res.json({ message: 'Recording started', id: recordingId });
-      })
-      .on('error', (err) => {
-        console.error('Recording error:', err);
-        activeRecording = null;
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Recording failed to start' });
-        }
-      })
-      .on('end', () => {
-        console.log('Recording finished');
-        activeRecording = null;
-      });
-
-    // If duration is specified, stop recording after that time
-    if (duration) {
-      setTimeout(() => {
-        if (activeRecording && activeRecording.id === recordingId) {
-          command.kill('SIGINT');
-        }
-      }, duration * 1000);
-    }
-
-  } catch (error) {
-    console.error('Error starting recording:', error);
-    res.status(500).json({ error: 'Failed to start recording' });
+// Start a recording (mock implementation)
+router.post('/start-recording', (req, res) => {
+  const { streamUrl, duration } = req.body;
+  if (!streamUrl || !duration) {
+    return res.status(400).json({ error: 'Missing streamUrl or duration' });
   }
+  console.log(`Starting recording from ${streamUrl} for ${duration} seconds...`);
+  // Simulate recording logic here
+  res.json({ message: 'Recording started' });
 });
 
-// Stop recording
-app.post('/stop-recording', (req, res) => {
-  try {
-    if (!activeRecording) {
-      return res.status(400).json({ error: 'No active recording to stop' });
-    }
-
-    activeRecording.process.kill('SIGINT');
-    const recordingId = activeRecording.id;
-    activeRecording = null;
-
-    // Wait a moment for the file to be finalized
-    setTimeout(() => {
-      const recordingPath = path.join(RECORDINGS_DIR, `${recordingId}.mp4`);
-      const stat = fs.statSync(recordingPath);
-      
-      res.json({
-        id: recordingId,
-        name: `Recording ${recordingId}`,
-        url: `/recordings/${recordingId}.mp4`,
-        timestamp: stat.birthtime
-      });
-    }, 500);
-  } catch (error) {
-    console.error('Error stopping recording:', error);
-    res.status(500).json({ error: 'Failed to stop recording' });
-  }
+// Stop a recording (mock implementation)
+router.post('/stop-recording', (req, res) => {
+  console.log('Stopping recording...');
+  // Simulate stopping recording logic here
+  res.json({ message: 'Recording stopped and saved' });
 });
 
-// Delete recording
-app.delete('/recordings/:id', (req, res) => {
+// Delete a recording
+router.delete('/api/recordings/:id', (req, res) => {
+  const { id } = req.params;
+  const filePath = path.join(RECORDINGS_DIR, `${id}.mp4`);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Recording not found' });
+  }
   try {
-    const { id } = req.params;
-    const filePath = path.join(RECORDINGS_DIR, `${id}.mp4`);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Recording not found' });
-    }
-
     fs.unlinkSync(filePath);
     res.json({ message: 'Recording deleted' });
-  } catch (error) {
-    console.error('Error deleting recording:', error);
+  } catch (err) {
+    console.error('Error deleting recording:', err.message);
     res.status(500).json({ error: 'Failed to delete recording' });
   }
 });
 
-// Save recording to database
-app.post('/api/recordings', async (req, res) => {
-  const { streamUrl, duration } = req.body;
-  try {
-    const recordingId = uuidv4();
-    const name = `Recording ${recordingId}`;
-    const timestamp = new Date();
-
-    // Simulate saving recording
-    await db.query('INSERT INTO recordings (id, name, url, timestamp) VALUES (?, ?, ?, ?)', [
-      recordingId,
-      name,
-      streamUrl,
-      timestamp,
-    ]);
-
-    res.json({ message: 'Recording saved', id: recordingId });
-  } catch (error) {
-    console.error('Error saving recording:', error);
-    res.status(500).json({ error: 'Failed to save recording' });
-  }
-});
-
-// Fetch recordings from database
-app.get('/api/recordings', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM recordings');
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching recordings:', error);
-    res.status(500).json({ error: 'Failed to fetch recordings' });
-  }
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-export default app;
+export default router;

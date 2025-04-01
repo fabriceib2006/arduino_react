@@ -25,16 +25,16 @@ function VideoFeed({ isConnected }) {
 
   const fetchRecordings = async () => {
     try {
-      const response = await fetch(`${process.env.RECORDING_SERVER_URL}/api/recordings`);
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:3000'}/api/recordings`);
       if (!response.ok) {
-        throw new Error('Failed to fetch recordings');
+        throw new Error(`Failed to fetch recordings: ${response.statusText}`);
       }
       const data = await response.json();
       setRecordedVideos(data);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch recordings:', err);
-      setError(err.message);
+      console.error('Failed to fetch recordings:', err.message);
+      setError('Failed to connect to the recording server. Please ensure it is running and the endpoint is correct.');
     }
   };
 
@@ -44,7 +44,7 @@ function VideoFeed({ isConnected }) {
     setIsRecording(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/start-recording', { // Updated to match recordingServer.js endpoint
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:3000'}/start-recording`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
@@ -68,7 +68,7 @@ function VideoFeed({ isConnected }) {
     setIsRecording(false);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/stop-recording', { // Updated to match recordingServer.js endpoint
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:3000'}/stop-recording`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -89,7 +89,7 @@ function VideoFeed({ isConnected }) {
 
   const deleteRecording = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/recordings/${id}`, { // Updated to match recordingServer.js endpoint
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:3000'}/api/recordings/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
