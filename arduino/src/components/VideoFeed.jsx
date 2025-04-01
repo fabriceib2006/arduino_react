@@ -25,7 +25,7 @@ function VideoFeed({ isConnected }) {
 
   const fetchRecordings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/recordings');
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL}/api/recordings`);
       if (!response.ok) {
         throw new Error('Failed to fetch recordings');
       }
@@ -44,7 +44,7 @@ function VideoFeed({ isConnected }) {
     setIsRecording(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/recordings', {
+      const response = await fetch('http://localhost:3000/start-recording', { // Updated to match recordingServer.js endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
@@ -68,7 +68,7 @@ function VideoFeed({ isConnected }) {
     setIsRecording(false);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/stop-recording', {
+      const response = await fetch('http://localhost:3000/stop-recording', { // Updated to match recordingServer.js endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -89,7 +89,7 @@ function VideoFeed({ isConnected }) {
 
   const deleteRecording = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/recordings/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/recordings/${id}`, { // Updated to match recordingServer.js endpoint
         method: 'DELETE',
       });
       if (!response.ok) {

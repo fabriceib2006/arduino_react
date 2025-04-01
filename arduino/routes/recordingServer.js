@@ -7,6 +7,11 @@ import multer from 'multer';
 import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/db.js'; // Import database connection
+import { fileURLToPath } from 'url'; // Import helper to resolve __dirname
+
+// Define __dirname manually
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
