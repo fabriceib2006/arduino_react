@@ -44,17 +44,18 @@ function VideoFeed({ isConnected }) {
     setIsRecording(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:3000'}/start-recording`, {
+      const response = await fetch(`${process.env.RECORDING_SERVER_URL || 'http://localhost:5001'}/start-recording`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }),
+        headers: { 'Content-Type': 'application/json' }, // Ensure Content-Type is set to application/json
+        body: JSON.stringify({ streamUrl: videoStreamUrl, duration: 10 }), // Ensure the body is properly formatted JSON
       });
       if (!response.ok) {
-        throw new Error('Failed to start recording');
+        const errorText = await response.text();
+        throw new Error(`Failed to start recording: ${errorText}`);
       }
       await fetchRecordings();
     } catch (err) {
-      console.error('Failed to start recording:', err);
+      console.error('Failed to start recording:', err.message);
       setError(err.message);
       setIsRecording(false);
     }

@@ -15,22 +15,14 @@ function App() {
     battery: 100,
   });
 
-  // Example: Fetch available serial ports from the server
+  // Use ports defined in .env
+  const arduinoUnoPort = process.env.ARDUINO_UNO_PORT || '/dev/ttyUSB0';
+  const arduinoCameraPort = process.env.ARDUINO_CAMERA_PORT || '/dev/ttyUSB1';
+
   useEffect(() => {
-    const fetchPorts = async () => {
-      try {
-        const response = await fetch(`${process.env.API_BASE_URL}/api/ports`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ports: ${response.statusText}`);
-        }
-        const ports = await response.json();
-        console.log('Available ports:', ports);
-      } catch (err) {
-        console.error('Error fetching ports:', err.message);
-        alert('Failed to connect to the backend server. Please ensure it is running.');
-      }
-    };
-    fetchPorts();
+    console.log('Using ports from .env:');
+    console.log('Arduino Uno Port:', arduinoUnoPort);
+    console.log('Arduino Camera Port:', arduinoCameraPort);
   }, []);
 
   return (
